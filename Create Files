@@ -1,0 +1,75 @@
+import pandas as pd
+
+char_list = []
+for char in range(ord('A'), ord('Z')+1):
+    char_list.append(chr(char))
+
+char_list
+list=['AA','AB','AC','AD','AE','AF']
+char_list=char_list+list
+
+file_path =r'C:\Users\phatdd3\HDBank\Kế hoạch chi phí quản lý ĐVKD năm 2024\Data-9M.2023.xlsx'
+# đọc file
+df=pd.read_excel(file_path,skiprows=2)
+# đổi tên cột thành A, B, C
+df.columns=char_list
+# loại bỏ dòng Grand total
+df=df[df['A']!='Grand Total']
+# đổi tên cột
+df=df.rename(columns={'A':'File_name'})
+# xoay datafram
+melted_df = pd.melt(df, id_vars=['File_name'], var_name='Cell', value_name='Value')
+# loại bỏ dấu phẩy ở dataframe
+melted_df['File_name']=melted_df['File_name'].str.replace("'","")
+df=melted_df.copy()
+
+column_mapping = {'B':'G10','C':'G13','D':'G16','K':'G18','E':'G23','F':'G27','G':'G28','H':'G29','I':'G30','J':'G31',
+    'L':'G32','M':'G33','N':'G34','O':'G35','P':'G36','Q':'G39','R':'G40','S':'G41','T':'G42','U':'G43','V':'G44',
+    'X':'G45','Y':'G46','Z':'G47','AA':'G49','AB':'G52','AC':'G55','AD':'G59','AE':'G60' }
+# chuyển đổi các cột của file thành các ô cần điền vào file excel
+df['Cell'] = df['Cell'].apply(lambda x: column_mapping.get(x, 'Column not found'))
+
+df=df[df['Cell']!='Column not found']
+
+
+import pandas as pd
+import openpyxl
+from openpyxl.styles import Protection
+
+
+# Load your DataFrame
+
+
+try:
+    # Load the Excel workbook
+    workbook = openpyxl.load_workbook('Form-mau-nhap-lieu-DVKD_Phat.xlsx')
+    
+    # Select a specific worksheet (e.g., the first sheet)
+    worksheet = workbook['KH CPQL']
+
+    for index, row in df.iterrows():
+        file_name = row['File_name']
+        
+        for index, row in df[df['File_name'] == file_name].iterrows():
+            cell = row['Cell']
+            new_value = row['Value']
+
+            # Access the specified cell in the current worksheet and set its value
+            worksheet[cell] = new_value
+            worksheet[cell].protection = Protection(locked=True)
+            
+        # Save the modified Excel file with a new filename
+        modified_file_name = f"{file_name}.xlsx"
+        # Protect the entire worksheet with a password
+        worksheet.protection.set_password('HDB@2024')
+        workbook.save(modified_file_name)        
+
+        workbook.close()
+
+        print(f"Modified file {file_name} saved as {modified_file_name}")
+
+    # Close the main workbook after processing all files
+    workbook.close()
+except Exception as e:
+    print(f"Error processing files: {str(e)}")
+
